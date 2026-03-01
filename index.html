@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Global 100 - 2026 Migration Fix</title>
+    <title>Global 100 - Final Resolution</title>
     <style>
         :root { --accent: #1DB954; --glass: rgba(255, 255, 255, 0.08); --border: rgba(255, 255, 255, 0.15); }
         body { background: #05070a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; min-height: 100vh; }
+        .orb { position: fixed; width: 400px; height: 400px; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.3; background: var(--accent); top: 0; left: 0; }
         .header { max-width: 500px; margin: 20px auto 40px; text-align: center; background: var(--glass); backdrop-filter: blur(25px); padding: 30px; border-radius: 24px; border: 1px solid var(--border); }
         .auth-grid { display: grid; gap: 10px; margin: 20px 0; }
         input { padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0,0,0,0.6); color: white; outline: none; }
@@ -20,14 +21,15 @@
     </style>
 </head>
 <body>
+    <div class="orb"></div>
     <div class="header">
         <h1>Global 100 Explorer</h1>
         <div class="auth-grid">
             <input type="text" id="id" placeholder="Client ID">
             <input type="password" id="secret" placeholder="Client Secret">
         </div>
-        <button onclick="run()" style="background:var(--accent); color:white; border:none; padding:15px; border-radius:30px; cursor:pointer; font-weight:900; width:100%;">GENERATE UNIQUE TRACKS</button>
-        <span id="status">Ready (v2026.3)</span>
+        <button onclick="run()" style="background:var(--accent); color:white; border:none; padding:15px; border-radius:30px; cursor:pointer; font-weight:900; width:100%;">FORCE SYNC TRACKS</button>
+        <span id="status">Network Ready</span>
     </div>
     <div id="grid"></div>
 
@@ -38,15 +40,13 @@
             const status = document.getElementById('status');
             const grid = document.getElementById('grid');
             
-            if (!id || !secret) return (status.innerText = "Keys required.");
+            if (!id || !secret) return (status.innerText = "Error: Credentials Missing");
 
             grid.innerHTML = "";
-            const seenIds = new Set();
-            // Use genre-based keywords which are more resilient in the 2026 index
-            const genres = ['pop', 'rock', 'hip-hop', 'dance', 'indie'];
+            status.innerText = "Bypassing Regional Filters...";
 
             try {
-                status.innerText = "Authorizing...";
+                // 1. AUTHENTICATION
                 const authRes = await fetch('https://accounts.spotify.com/api/token', {
                     method: 'POST',
                     headers: { 
@@ -57,49 +57,49 @@
                 });
 
                 const authData = await authRes.json();
-                if (!authRes.ok) throw new Error(authData.error || "Auth Failed");
+                if (!authRes.ok) throw new Error(authData.error_description || "Auth Failure");
                 const token = authData.access_token;
 
-                for (let genre of genres) {
-                    status.innerText = `Searching genre: ${genre}...`;
-                    
-                    // 2026 Migration Note: 'market' is now practically mandatory for consistent 'total > 0'
-                    const url = `https://api.spotify.com/v1/search?q=genre:${genre}&type=track&limit=20&market=US`;
-                    
-                    const res = await fetch(url, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                // 2. THE "TOP 50 GLOBAL" PLAYLIST METHOD
+                // This bypasses the Search API issues by pulling directly from a curated ID
+                // Playlist ID: 37i9dQZEVXbMDoHDwfc2t1 (Global Top 50)
+                const playlistId = '37i9dQZEVXbMDoHDwfc2t1';
+                const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50&market=US`;
+                
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error("Spotify rejected the Playlist request.");
+
+                const data = await res.json();
+                const tracks = data.items;
+
+                if (tracks && tracks.length > 0) {
+                    tracks.forEach(item => {
+                        const track = item.track;
+                        if (!track) return;
+                        
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.innerHTML = `
+                            <img src="${track.album.images[0]?.url || ''}">
+                            <div class="card-body">
+                                <div class="song-title">${track.name}</div>
+                                <div class="artist">${track.artists[0].name}</div>
+                                <a href="${track.external_urls.spotify}" target="_blank" class="btn-link">OPEN SPOTIFY</a>
+                            </div>
+                        `;
+                        grid.appendChild(card);
                     });
-
-                    if (!res.ok) {
-                        console.warn(`Genre ${genre} failed: ${res.status}`);
-                        continue;
-                    }
-
-                    const data = await res.json();
-                    if (data.tracks?.items) {
-                        data.tracks.items.forEach(track => {
-                            if (!seenIds.has(track.id)) {
-                                seenIds.add(track.id);
-                                const card = document.createElement('div');
-                                card.className = 'card';
-                                card.innerHTML = `
-                                    <img src="${track.album.images[0]?.url || ''}">
-                                    <div class="card-body">
-                                        <div class="song-title">${track.name}</div>
-                                        <div class="artist">${track.artists[0].name}</div>
-                                        <a href="${track.external_urls.spotify}" target="_blank" class="btn-link">LISTEN</a>
-                                    </div>
-                                `;
-                                grid.appendChild(card);
-                            }
-                        });
-                    }
+                    status.innerText = `Success: ${tracks.length} Global Hits Loaded.`;
+                } else {
+                    status.innerText = "Empty response. Try checking your Developer Dashboard for 'Web API' activation.";
                 }
 
-                status.innerText = seenIds.size > 0 ? `Success: ${seenIds.size} Unique Tracks Found.` : "Error: API still returning empty lists. Check Dashboard Quota.";
-
             } catch (e) {
-                status.innerText = "Fatal: " + e.message;
+                status.innerText = "Fatal Error: " + e.message;
+                console.error(e);
             }
         }
     </script>
