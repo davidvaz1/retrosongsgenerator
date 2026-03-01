@@ -2,79 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Global 100 - Logic & Visual Sync</title>
+    <title>Global 100 - Stealth Sync</title>
     <style>
         :root { --accent: #1DB954; --glass: rgba(255, 255, 255, 0.08); --border: rgba(255, 255, 255, 0.15); }
-        body { background: #05070a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; min-height: 100vh; overflow-x: hidden; }
-
-        .orb { position: fixed; width: 500px; height: 500px; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.4; animation: drift 20s infinite alternate; }
-        @keyframes drift { from { transform: translate(-10%, -10%); } to { transform: translate(25%, 25%); } }
-
-        .header {
-            max-width: 600px; margin: 40px auto; text-align: center;
-            background: var(--glass); backdrop-filter: blur(30px);
-            padding: 30px; border-radius: 28px; border: 1px solid var(--border);
-        }
-
-        .auth-grid { display: grid; gap: 10px; margin: 20px 0; }
+        body { background: #05070a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; min-height: 100vh; }
+        .orb { position: fixed; width: 400px; height: 400px; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.3; background: var(--accent); top: -10%; left: -10%; }
+        .header { max-width: 500px; margin: 20px auto 40px; text-align: center; background: var(--glass); backdrop-filter: blur(20px); padding: 25px; border-radius: 20px; border: 1px solid var(--border); }
+        .auth-grid { display: grid; gap: 8px; margin: 20px 0; }
         input { padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0,0,0,0.6); color: white; outline: none; }
-        
-        #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; max-width: 1400px; margin: 0 auto; }
-
-        .card { 
-            background: var(--glass); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid var(--border);
-            overflow: hidden; display: flex; flex-direction: column; height: 100%; transition: 0.3s;
-        }
-        .card:hover { transform: translateY(-10px); border-color: var(--accent); }
-        .card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #111; }
-        .card-body { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
-        .song-title { font-weight: 800; font-size: 1.1rem; height: 2.6em; overflow: hidden; }
-        .artist { color: var(--accent); font-weight: 700; margin-bottom: 15px; }
-        .meta-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
-        .btn-link { background: var(--accent); color: white; text-decoration: none; text-align: center; padding: 12px; border-radius: 12px; font-weight: 800; margin-top: auto; }
-        
-        #status { color: var(--accent); font-weight: 800; margin-top: 15px; display: block; }
+        #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--glass); backdrop-filter: blur(15px); border-radius: 18px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); border-color: var(--accent); }
+        .card img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+        .card-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .title { font-weight: 800; font-size: 1rem; margin-bottom: 4px; }
+        .artist { color: var(--accent); font-weight: 600; font-size: 0.85rem; margin-bottom: 12px; }
+        .btn { background: var(--accent); color: white; text-decoration: none; text-align: center; padding: 10px; border-radius: 10px; font-weight: 800; margin-top: auto; font-size: 0.8rem; }
+        #status { color: var(--accent); font-weight: 800; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-
-    <div class="orb" style="background: #1DB954; top: -100px; left: -100px;"></div>
-    <div class="orb" style="background: #7928ca; bottom: -100px; right: -100px; animation-delay: -5s;"></div>
-
+    <div class="orb"></div>
     <div class="header">
-        <h1>Global 100 Explorer</h1>
+        <h2 style="margin:0">Global Explorer</h2>
         <div class="auth-grid">
             <input type="text" id="id" placeholder="Client ID">
             <input type="password" id="secret" placeholder="Client Secret">
         </div>
-        <button onclick="run()" style="background:var(--accent); color:white; border:none; padding:15px; border-radius:30px; cursor:pointer; font-weight:900; width:100%;">GENERATE 100 UNIQUE SONGS</button>
-        <span id="status">Ready</span>
+        <button onclick="run()" style="width:100%; padding:14px; background:var(--accent); color:white; border:none; border-radius:25px; cursor:pointer; font-weight:900;">GENERATE TRACKS</button>
+        <p id="status">Standby</p>
     </div>
-
     <div id="grid"></div>
 
     <script>
+        // Helper to wait between requests
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
         async function run() {
             const id = document.getElementById('id').value.trim();
             const secret = document.getElementById('secret').value.trim();
             const status = document.getElementById('status');
             const grid = document.getElementById('grid');
             
-            // Guard: Empty Credentials
-            if (!id || !secret) {
-                status.innerText = "Error: Please enter both Client ID and Secret.";
-                return;
-            }
+            if (!id || !secret) return (status.innerText = "Keys required!");
 
             grid.innerHTML = "";
             const seenIds = new Set();
-            let errorCount = 0;
-            const keywords = ['love', 'night', 'fire', 'dream', 'world'];
+            const keywords = ['hits', 'pop', 'new', 'vibes', 'top'];
 
             try {
-                // 1. Auth with Response Check
-                status.innerText = "Authenticating...";
-                const authRes = await fetch('https://accounts.spotify.com/api/token', {
+                status.innerText = "Bypassing filters...";
+                // 1. Auth with Cache Buster
+                const authRes = await fetch(`https://accounts.spotify.com/api/token?t=${Date.now()}`, {
                     method: 'POST',
                     headers: { 
                         'Authorization': 'Basic ' + btoa(id + ':' + secret),
@@ -83,25 +62,21 @@
                     body: 'grant_type=client_credentials'
                 });
 
-                if (!authRes.ok) {
-                    const errData = await authRes.json();
-                    throw new Error(`Auth Failed: ${errData.error_description || authRes.statusText}`);
-                }
+                if (!authRes.ok) throw new Error("Auth Rejected (Check Keys)");
                 const { access_token } = await authRes.json();
 
-                // 2. Batched Search with Keyword Rotation
-                for (let i = 0; i < 5; i++) {
-                    status.innerText = `Fetching Batch ${i + 1}/5 (${keywords[i]} hits)...`;
+                for (let i = 0; i < keywords.length; i++) {
+                    status.innerText = `Fetching ${keywords[i]}...`;
                     
-                    const query = encodeURIComponent(`${keywords[i]} year:1970-2026`);
-                    const res = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=track&limit=20&offset=0`, {
+                    const query = encodeURIComponent(`${keywords[i]} year:2024-2026`);
+                    const res = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=track&limit=20`, {
                         headers: { 'Authorization': 'Bearer ' + access_token }
                     });
 
-                    if (!res.ok) {
-                        console.error(`Batch ${i+1} failed with status ${res.status}`);
-                        errorCount++;
-                        continue;
+                    if (res.status === 429) {
+                        status.innerText = "Rate limited. Retrying in 2s...";
+                        await sleep(2000); // Wait 2 seconds if limited
+                        i--; continue; // Try again
                     }
 
                     const data = await res.json();
@@ -109,32 +84,25 @@
                         data.tracks.items.forEach(track => {
                             if (!seenIds.has(track.id)) {
                                 seenIds.add(track.id);
-                                const card = document.createElement('div');
-                                card.className = 'card';
-                                card.innerHTML = `
-                                    <img src="${track.album.images[0]?.url || ''}">
-                                    <div class="card-body">
-                                        <div class="song-title">${track.name}</div>
-                                        <div class="artist">${track.artists[0].name}</div>
-                                        <div class="meta-row"><span>Album</span><span>${track.album.name.slice(0,12)}..</span></div>
-                                        <div class="meta-row"><span>Released</span><span>${track.album.release_date.split('-')[0]}</span></div>
-                                        <a href="${track.external_urls.spotify}" target="_blank" class="btn-link">OPEN SPOTIFY</a>
+                                grid.insertAdjacentHTML('beforeend', `
+                                    <div class="card">
+                                        <img src="${track.album.images[0]?.url}">
+                                        <div class="card-body">
+                                            <div class="title">${track.name}</div>
+                                            <div class="artist">${track.artists[0].name}</div>
+                                            <a href="${track.external_urls.spotify}" target="_blank" class="btn">LISTEN</a>
+                                        </div>
                                     </div>
-                                `;
-                                grid.appendChild(card);
+                                `);
                             }
                         });
                     }
+                    await sleep(400); // Stagger requests to avoid detection
                 }
-
-                if (seenIds.size === 0) {
-                    status.innerText = errorCount === 5 ? "Error: All requests failed. You may be rate-limited." : "Search yielded no unique tracks.";
-                } else {
-                    status.innerText = `Successfully Mapped ${seenIds.size} Unique Tracks.`;
-                }
+                status.innerText = `Success: ${seenIds.size} Unique Tracks Found.`;
 
             } catch (e) {
-                status.innerText = "Fatal: " + e.message;
+                status.innerText = e.message;
             }
         }
     </script>
