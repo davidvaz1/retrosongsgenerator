@@ -2,78 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Spotify Explorer - FIXED RENDER</title>
+    <title>Spotify Explorer - FIXED VISIBILITY</title>
     <style>
-        :root {
-            --bg: #121212; --text: #ffffff; --card: #181818; --border: #282828; --accent: #1DB954;
-        }
-        body.light {
-            --bg: #ffffff; --text: #121212; --card: #f4f4f4; --border: #dddddd; --accent: #1aa34a;
-        }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; transition: 0.3s; padding: 20px; text-align: center; }
+        :root { --bg: #121212; --text: #fff; --card: #181818; --accent: #1DB954; }
+        body.light { --bg: #fdfdfd; --text: #121212; --card: #fff; --accent: #1aa34a; }
         
-        /* The Grid Fix */
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 40px 20px; transition: 0.3s; }
+        
+        /* THE CRITICAL FIX: Fixed height and explicit display */
         #grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center;
             gap: 20px; 
-            max-width: 1100px; 
-            margin: 40px auto;
-            min-height: 500px; /* Forces space to be visible */
+            width: 100%;
+            min-height: 800px; 
+            margin-top: 30px;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
 
         .card { 
             background: var(--card); 
-            border: 1px solid var(--border); 
-            padding: 12px; 
+            border: 1px solid #333; 
+            width: 200px; /* Hard width */
+            padding: 15px; 
             border-radius: 12px; 
-            text-align: left;
-            transition: transform 0.2s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .card:hover { transform: translateY(-5px); }
+
         .card img { 
             width: 100%; 
-            aspect-ratio: 1/1; 
+            height: 200px; /* Hard height */
+            background: #333; 
             border-radius: 8px; 
             object-fit: cover; 
-            background: #333; /* Visual placeholder */
         }
-        .song-info { margin-top: 10px; }
-        .song-name { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .artist-name { color: #888; font-size: 0.8rem; }
 
-        button { background: var(--accent); color: white; border: none; padding: 14px 28px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        button:disabled { background: #444; opacity: 0.7; }
-        .toggle-btn { background: #555; font-size: 0.8rem; margin-bottom: 20px; }
-        #status { margin-top: 15px; font-weight: bold; color: var(--accent); min-height: 1.2em; }
+        button { background: var(--accent); color: #fff; border: none; padding: 15px 30px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        .mode-btn { background: #444; margin-bottom: 20px; font-size: 0.8rem; }
+        #status { color: var(--accent); font-weight: bold; margin: 20px; height: 20px; }
     </style>
 </head>
-<body class="dark">
+<body>
 
-    <button class="toggle-btn" onclick="document.body.classList.toggle('light')">Toggle Light Mode</button>
+    <button class="mode-btn" onclick="document.body.classList.toggle('light')">Toggle Light Mode</button>
     <h1>Spotify Explorer</h1>
-    <p>Loading 100 tracks in batches of 10 (Feb 2026 API Compliant)</p>
-    
-    <button id="main-btn" onclick="startGeneration()">GENERATE 100 SONGS</button>
+    <button id="btn" onclick="run()">GENERATE 100 SONGS</button>
     <div id="status">Ready</div>
     
     <div id="grid"></div>
 
     <script>
-        const CLIENT_ID = 'YOUR_CLIENT_ID';
-        const CLIENT_SECRET = 'YOUR_CLIENT_SECRET';
+        const CLIENT_ID = 'YOUR_ID'; 
+        const CLIENT_SECRET = 'YOUR_SECRET';
 
-        async function startGeneration() {
-            const btn = document.getElementById('main-btn');
+        async function run() {
             const grid = document.getElementById('grid');
             const status = document.getElementById('status');
+            const btn = document.getElementById('btn');
             
             btn.disabled = true;
             grid.innerHTML = "";
-            let allTracks = [];
+            let tracks = [];
 
             try {
-                // 1. Authenticate
+                // 1. Token
                 const authRes = await fetch('https://accounts.spotify.com/api/token', {
                     method: 'POST',
                     headers: {
@@ -84,52 +78,41 @@
                 });
                 const { access_token } = await authRes.json();
 
-                // 2. Paginated Loop (10 pages of 10)
+                // 2. Loop 10x
                 for (let i = 0; i < 10; i++) {
-                    status.innerText = `Fetching: ${ (i + 1) * 10 } / 100 songs...`;
+                    status.innerText = `Fetching ${ (i+1)*10 }%...`;
                     
+                    // Fixed URL Construction
                     const url = `https://api.spotify.com/v1/search?q=year:2026&type=track&limit=10&offset=${i * 10}`;
                     
                     const res = await fetch(url, {
-                        headers: { 'Authorization': 'Bearer ' + access_token }
+                        headers: { 'Authorization': `Bearer ${access_token}` }
                     });
-                    
                     const data = await res.json();
-                    if (data.tracks && data.tracks.items) {
-                        allTracks = [...allTracks, ...data.tracks.items];
-                        // Render progress to the screen immediately
-                        updateGrid(allTracks);
+                    
+                    if (data.tracks?.items) {
+                        tracks = [...tracks, ...data.tracks.items];
+                        render(tracks); // Immediate Render
                     }
-                    // Prevent UI freezing
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(r => setTimeout(r, 100));
                 }
-                status.innerText = "100 Songs Loaded Successfully.";
-                console.log("Total songs in array:", allTracks.length);
-
+                status.innerText = "100% Loaded.";
             } catch (e) {
                 status.innerText = "Error: " + e.message;
-                console.error("Fetch Error:", e);
             } finally {
                 btn.disabled = false;
             }
         }
 
-        function updateGrid(tracks) {
+        function render(items) {
             const grid = document.getElementById('grid');
-            const html = tracks.map(t => {
-                const img = t.album.images[0]?.url || 'https://via.placeholder.com/200';
-                return `
-                    <div class="card">
-                        <img src="${img}" loading="lazy">
-                        <div class="song-info">
-                            <div class="song-name">${t.name}</div>
-                            <div class="artist-name">${t.artists[0].name}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            grid.innerHTML = html;
+            grid.innerHTML = items.map(t => `
+                <div class="card">
+                    <img src="${t.album.images[0]?.url || ''}" onerror="this.src='https://via.placeholder.com/200'">
+                    <div style="margin-top:10px; font-weight:bold; font-size:0.8rem;">${t.name}</div>
+                    <div style="color:#888; font-size:0.7rem;">${t.artists[0].name}</div>
+                </div>
+            `).join('');
         }
     </script>
 </body>
