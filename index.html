@@ -2,54 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Global 100 - Visible Fix</title>
+    <title>Global 100 - Glassmorphism Restored</title>
     <style>
-        /* Minimalist, high-contrast styles to ensure visibility */
-        body { background: #121212; color: #ffffff; font-family: sans-serif; padding: 20px; }
-        
-        .controls { 
-            background: #181818; padding: 20px; border-radius: 8px; 
-            max-width: 500px; margin: 0 auto 30px; border: 2px solid #333;
+        :root { --accent: #1DB954; --glass: rgba(255, 255, 255, 0.08); --border: rgba(255, 255, 255, 0.12); }
+        body { 
+            background: #090c10; color: white; font-family: 'Inter', sans-serif; 
+            margin: 0; padding: 20px; min-height: 100vh;
         }
-        input { width: 90%; padding: 10px; margin: 10px 0; display: block; }
-        
-        /* FORCED GRID VISIBILITY */
+
+        /* The "Glass" Background Effect */
+        .bg-glow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 30%, #1db95433 0%, transparent 40%),
+                        radial-gradient(circle at 80% 70%, #7928ca33 0%, transparent 40%);
+            z-index: -1;
+        }
+
+        .header {
+            max-width: 600px; margin: 40px auto; text-align: center;
+            background: var(--glass); backdrop-filter: blur(25px);
+            padding: 30px; border-radius: 24px; border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .auth-box { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+        input { 
+            padding: 12px; border-radius: 10px; border: 1px solid var(--border);
+            background: rgba(0,0,0,0.4); color: white; outline: none;
+        }
+
+        /* GRID - Forced Layout */
         #grid { 
-            display: block !important; /* Changed from grid to block for maximum compatibility */
-            width: 100% !important;
-            min-height: 500px;
-            border: 1px dashed #444; /* Debug border: if you see this, the container is there */
+            display: grid !important; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 25px; max-width: 1400px; margin: 0 auto;
+            min-height: 200px;
         }
 
         .card { 
-            background: #282828; 
-            margin: 15px; 
-            padding: 15px; 
-            border-radius: 8px;
-            display: flex; /* Horizontal layout is harder to "hide" than a grid */
-            align-items: center;
-            border-left: 5px solid #1DB954;
+            background: var(--glass); backdrop-filter: blur(20px);
+            border-radius: 20px; border: 1px solid var(--border);
+            overflow: hidden; display: flex; flex-direction: column;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .card img { width: 80px; height: 80px; margin-right: 20px; border-radius: 4px; background: #000; }
-        .info { flex-grow: 1; }
-        .info b { font-size: 1.2rem; display: block; margin-bottom: 4px; color: #fff; }
-        .info span { color: #b3b3b3; font-size: 0.9rem; }
+        .card:hover { transform: translateY(-10px); border-color: var(--accent); }
+        .card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #111; }
         
-        .link-btn { 
-            background: #1DB954; color: white; text-decoration: none; 
-            padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem;
+        .card-body { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
+        .song-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; line-height: 1.3; height: 2.6em; overflow: hidden; }
+        .artist { color: var(--accent); font-weight: 600; font-size: 0.9rem; margin-bottom: 15px; }
+        
+        .meta { font-size: 0.8rem; color: #aaa; margin-bottom: 20px; flex-grow: 1; }
+        .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+
+        .btn-play { 
+            background: var(--accent); color: white; text-decoration: none; 
+            text-align: center; padding: 12px; border-radius: 12px; font-weight: 800;
         }
-        #status { color: #1DB954; font-weight: bold; text-align: center; display: block; margin: 10px; }
+
+        #status { color: var(--accent); font-weight: bold; margin-top: 15px; display: block; }
     </style>
 </head>
 <body>
 
-    <div class="controls">
-        <h2 style="margin:0">Spotify Global 100</h2>
-        <input type="text" id="id" placeholder="Client ID">
-        <input type="password" id="secret" placeholder="Client Secret">
-        <button onclick="run()" style="width:100%; padding:15px; background:#1DB954; color:white; border:none; font-weight:bold; cursor:pointer;">GENERATE LIST</button>
-        <span id="status">Ready</span>
+    <div class="bg-glow"></div>
+
+    <div class="header">
+        <h1>Global 100 Explorer</h1>
+        <div class="auth-box">
+            <input type="text" id="id" placeholder="Client ID">
+            <input type="password" id="secret" placeholder="Client Secret">
+        </div>
+        <button onclick="run()" style="background:var(--accent); color:white; border:none; padding:15px 35px; border-radius:30px; cursor:pointer; font-weight:900; width:100%;">GENERATE 100 SONGS</button>
+        <span id="status">System Ready</span>
     </div>
 
     <div id="grid"></div>
@@ -61,55 +86,68 @@
             const status = document.getElementById('status');
             const grid = document.getElementById('grid');
             
-            if(!id || !secret) return alert("Enter keys!");
+            if(!id || !secret) return alert("Credentials required.");
             
-            grid.innerHTML = "<h3 style='text-align:center'>Clearing grid and starting injection...</h3>";
-            status.innerText = "Authenticating...";
+            grid.innerHTML = "";
+            status.innerText = "Initiating Secure Handshake...";
 
             try {
-                // 1. Auth
-                const auth = await fetch('https://accounts.spotify.com/api/token', {
+                // 1. Get Token
+                const authRes = await fetch('https://accounts.spotify.com/api/token', {
                     method: 'POST',
-                    headers: { 'Authorization': 'Basic ' + btoa(id + ':' + secret), 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: { 
+                        'Authorization': 'Basic ' + btoa(id + ':' + secret),
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
                     body: 'grant_type=client_credentials'
                 });
-                const { access_token } = await auth.json();
-
-                // 2. Fetch 100 songs in 5 batches
-                grid.innerHTML = ""; // Clear for real cards
                 
+                if(!authRes.ok) throw new Error("Auth Failed - Check Credentials");
+                const { access_token } = await authRes.json();
+
+                // 2. Data Fetch Loop
                 for (let i = 0; i < 5; i++) {
-                    status.innerText = `Drawing Cards: ${ (i+1)*20 }/100`;
+                    status.innerText = `Syncing Global Stream: ${ (i+1)*20 }/100`;
                     
                     const res = await fetch(`https://api.spotify.com/v1/search?q=top+hits+2026&type=track&limit=20&offset=${i*20}&market=US`, {
                         headers: { 'Authorization': 'Bearer ' + access_token }
                     });
+                    
                     const data = await res.json();
 
                     if(data.tracks && data.tracks.items) {
                         data.tracks.items.forEach(track => {
-                            // Manual Creation to avoid innerHTML string issues
+                            // Creating card and forcing it into the grid
                             const card = document.createElement('div');
                             card.className = 'card';
                             
-                            const img = track.album?.images[0]?.url || 'https://via.placeholder.com/80';
-                            
+                            const img = track.album?.images[0]?.url || '';
+                            const name = track.name || 'Unknown';
+                            const artist = track.artists[0]?.name || 'Unknown';
+                            const album = track.album.name || 'N/A';
+                            const pop = track.popularity || 0;
+                            const link = track.external_urls.spotify;
+
                             card.innerHTML = `
                                 <img src="${img}">
-                                <div class="info">
-                                    <b>${track.name}</b>
-                                    <span>${track.artists[0].name} • ${track.album.name}</span><br>
-                                    <small style="color:#666">Popularity: ${track.popularity}% | Released: ${track.album.release_date}</small>
+                                <div class="card-body">
+                                    <div class="song-title">${name}</div>
+                                    <div class="artist">${artist}</div>
+                                    <div class="meta">
+                                        <div class="meta-row"><span>Album</span><span>${album.slice(0,15)}</span></div>
+                                        <div class="meta-row"><span>Popularity</span><span>${pop}%</span></div>
+                                        <div class="meta-row"><span>Released</span><span>${track.album.release_date}</span></div>
+                                    </div>
+                                    <a href="${link}" target="_blank" class="btn-play">LISTEN ON SPOTIFY</a>
                                 </div>
-                                <a href="${track.external_urls.spotify}" target="_blank" class="link-btn">LISTEN</a>
                             `;
                             grid.appendChild(card);
                         });
                     }
                 }
-                status.innerText = "FINISH: 100 items added to the page.";
+                status.innerText = "Display Synchronized Successfully.";
             } catch (e) {
-                status.innerText = "FATAL ERROR: " + e.message;
+                status.innerText = "Critical Error: " + e.message;
                 console.error(e);
             }
         }
