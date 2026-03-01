@@ -2,68 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Global 100 - Final Visibility Fix</title>
+    <title>Global 100 - Data Guaranteed</title>
     <style>
         :root { --accent: #1DB954; --glass: rgba(255, 255, 255, 0.08); --border: rgba(255, 255, 255, 0.15); }
-        
-        body { 
-            background: #0b0e14; color: white; font-family: 'Inter', sans-serif; 
-            margin: 0; padding: 20px; min-height: 100vh;
-        }
+        body { background: #0b0e14; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; min-height: 100vh; }
 
-        /* Fixed Background Blobs */
-        .bg-blob {
-            position: fixed; width: 600px; height: 600px; border-radius: 50%;
-            filter: blur(100px); z-index: -1; opacity: 0.5;
-        }
+        .bg-blob { position: fixed; width: 500px; height: 500px; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.4; background: var(--accent); top: -10%; left: -10%; }
 
         .header {
-            position: relative; z-index: 10;
-            max-width: 600px; margin: 20px auto 40px; text-align: center;
-            background: var(--glass); backdrop-filter: blur(30px);
+            max-width: 600px; margin: 40px auto; text-align: center;
+            background: var(--glass); backdrop-filter: blur(25px);
             padding: 30px; border-radius: 24px; border: 1px solid var(--border);
         }
 
         .auth-grid { display: grid; gap: 10px; margin: 20px 0; }
         input { padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0,0,0,0.6); color: white; }
 
-        /* THE GRID - Forced Visibility and Layout */
         #grid { 
-            position: relative; z-index: 5;
             display: grid !important; 
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important; 
-            gap: 25px !important; 
-            max-width: 1400px; margin: 0 auto;
-            min-height: 400px; /* Forces the container to have height */
-            visibility: visible !important;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 25px; max-width: 1400px; margin: 0 auto;
         }
 
         .card { 
             background: var(--glass); backdrop-filter: blur(20px);
             border-radius: 20px; border: 1px solid var(--border);
             overflow: hidden; display: flex; flex-direction: column; height: 100%;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #1a1a1a; }
-        
         .card-body { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
         .song-title { font-weight: 800; font-size: 1.1rem; height: 2.6em; overflow: hidden; margin-bottom: 5px; }
         .artist { color: var(--accent); font-weight: 700; font-size: 0.9rem; margin-bottom: 15px; }
-        
         .meta-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
-
-        .btn-link { 
-            background: var(--accent); color: white; text-decoration: none; 
-            text-align: center; padding: 12px; border-radius: 12px; 
-            font-weight: 800; margin-top: auto;
-        }
+        .btn-link { background: var(--accent); color: white; text-decoration: none; text-align: center; padding: 12px; border-radius: 12px; font-weight: 800; margin-top: auto; }
         #status { color: var(--accent); font-weight: bold; display: block; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="bg-blob" style="background: #1DB954; top: -200px; left: -200px;"></div>
-    <div class="bg-blob" style="background: #7928ca; bottom: -200px; right: -200px;"></div>
+    <div class="bg-blob"></div>
 
     <div class="header">
         <h1>Global 100 Explorer</h1>
@@ -72,7 +49,7 @@
             <input type="password" id="secret" placeholder="Client Secret">
         </div>
         <button onclick="run()" style="background:var(--accent); color:white; border:none; padding:15px; border-radius:30px; cursor:pointer; font-weight:900; width:100%;">GENERATE 100 SONGS</button>
-        <span id="status">Ready to Sync</span>
+        <span id="status">Ready</span>
     </div>
 
     <div id="grid"></div>
@@ -84,14 +61,11 @@
             const status = document.getElementById('status');
             const grid = document.getElementById('grid');
             
-            if(!id || !secret) return alert("Keys required.");
-            
-            // CLEAR EVERYTHING
             grid.innerHTML = "";
-            status.innerText = "Authorizing...";
+            status.innerText = "Authenticating...";
 
             try {
-                // 1. Get Access Token
+                // 1. Auth Handshake
                 const authRes = await fetch('https://accounts.spotify.com/api/token', {
                     method: 'POST',
                     headers: { 
@@ -102,43 +76,49 @@
                 });
                 
                 const authData = await authRes.json();
-                if(!authData.access_token) throw new Error("Check your Client ID/Secret");
+                if(!authData.access_token) throw new Error("Check API Credentials");
                 const token = authData.access_token;
 
-                // 2. Fetch using a guaranteed search (2026 hits)
+                // 2. The "Universal" Search Query
+                // We use 'year:2025-2026' to ensure a massive pool of new music
+                const query = encodeURIComponent('year:2025-2026');
+                
                 for (let i = 0; i < 5; i++) {
-                    status.innerText = `Painting UI: ${ (i+1)*20 }%`;
+                    status.innerText = `Fetching Global Results: ${ (i+1)*20 }/100`;
                     
-                    const res = await fetch(`https://api.spotify.com/v1/search?q=year:2026&type=track&limit=20&offset=${i*20}&market=US`, {
+                    const res = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=track&limit=20&offset=${i*20}`, {
                         headers: { 'Authorization': 'Bearer ' + token }
                     });
                     
                     const data = await res.json();
 
-                    if(data.tracks && data.tracks.items) {
+                    if(data.tracks && data.tracks.items && data.tracks.items.length > 0) {
                         data.tracks.items.forEach(track => {
-                            // Using a safe template string to create cards
                             const cardHTML = `
                                 <div class="card">
-                                    <img src="${track.album.images[0]?.url || ''}" loading="lazy">
+                                    <img src="${track.album.images[0]?.url || ''}">
                                     <div class="card-body">
                                         <div class="song-title">${track.name}</div>
                                         <div class="artist">${track.artists[0].name}</div>
                                         <div class="meta-row"><span>Album</span><span>${track.album.name.slice(0,12)}..</span></div>
                                         <div class="meta-row"><span>Popularity</span><span>${track.popularity}%</span></div>
-                                        <a href="${track.external_urls.spotify}" target="_blank" class="btn-link">SPOTIFY LINK</a>
+                                        <a href="${track.external_urls.spotify}" target="_blank" class="btn-link">OPEN SPOTIFY</a>
                                     </div>
                                 </div>
                             `;
-                            // Direct insertion into the grid's HTML
                             grid.insertAdjacentHTML('beforeend', cardHTML);
                         });
                     }
                 }
-                status.innerText = `Success: ${grid.children.length} Tracks Displayed.`;
+
+                if(grid.children.length === 0) {
+                    status.innerText = "Error: Spotify returned zero results for this query.";
+                } else {
+                    status.innerText = `Successfully Painted ${grid.children.length} Cards.`;
+                }
+
             } catch (e) {
-                status.innerText = "Error: " + e.message;
-                console.error(e);
+                status.innerText = "Connection Error: " + e.message;
             }
         }
     </script>
