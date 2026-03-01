@@ -1,34 +1,112 @@
-const fetch = require('node-fetch');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spotify Explorer - Secure Auth</title>
+    <style>
+        :root { --bg: #121212; --text: #fff; --accent: #1DB954; --card: #181818; }
+        body.light { --bg: #fdfdfd; --text: #121212; --accent: #1aa34a; --card: #eee; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; transition: 0.3s; padding: 20px; text-align: center; }
+        
+        .auth-container { background: var(--card); padding: 25px; border-radius: 15px; max-width: 450px; margin: 0 auto 30px; border: 1px solid #333; }
+        input { width: 90%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #000; color: #fff; font-size: 0.9rem; }
+        
+        #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--card); padding: 12px; border-radius: 10px; text-align: left; border: 1px solid #333; transition: 0.2s; }
+        .card:hover { transform: scale(1.03); }
+        .card img { width: 100%; aspect-ratio: 1; border-radius: 6px; object-fit: cover; background: #333; }
+        
+        button { background: var(--accent); color: #fff; border: none; padding: 14px 28px; border-radius: 30px; cursor: pointer; font-weight: bold; margin: 10px; }
+        button:disabled { background: #444; cursor: not-allowed; }
+        #status { margin: 15px; font-weight: bold; color: var(--accent); min-height: 1.5em; }
+        .error { color: #ff5555 !important; }
+    </style>
+</head>
+<body>
 
-exports.handler = async (event) => {
-    const clientId = event.headers['x-client-id'];
-    const clientSecret = event.headers['x-client-secret'];
-    const offset = event.headers['x-offset'] || 0;
+    <button onclick="document.body.classList.toggle('light')" style="background:#555; font-size:0.7rem;">Toggle Mode</button>
+    <h1>Global Hits 2026</h1>
 
-    try {
-        // 1. Authenticate server-side
-        const authRes = await fetch('https://accounts.spotify.com/api/token', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: 'grant_type=client_credentials'
-        });
+    <div class="auth-container">
+        <h3>Enter Credentials</h3>
+        <input type="text" id="clientId" placeholder="Spotify Client ID">
+        <input type="password" id="clientSecret" placeholder="Spotify Client Secret">
+        <p style="font-size: 0.7rem; color: #888;">Credentials are sent securely to your Netlify function.</p>
+    </div>
 
-        if (!authRes.ok) return { statusCode: 401, body: JSON.stringify({ message: "Invalid Spotify Credentials" }) };
-        const { access_token } = await authRes.json();
+    <button id="btn" onclick="runExplorer()">GENERATE 100 SONGS</button>
+    <div id="status">Ready</div>
+    <div id="grid"></div>
 
-        // 2. Search using the Feb 2026 limit of 10
-        const searchUrl = `https://api.spotify.com/v1/search?q=year:2026&type=track&limit=10&offset=${offset}`;
-        const searchRes = await fetch(searchUrl, {
-            headers: { 'Authorization': `Bearer ${access_token}` }
-        });
+    <script>
+        async function runExplorer() {
+            const grid = document.getElementById('grid');
+            const status = document.getElementById('status');
+            const btn = document.getElementById('btn');
+            const id = document.getElementById('clientId').value;
+            const secret = document.getElementById('clientSecret').value;
 
-        const data = await searchRes.json();
-        return { statusCode: 200, body: JSON.stringify(data) };
+            if (!id || !secret) {
+                status.className = "error";
+                status.innerText = "Error: Enter both Client ID and Secret.";
+                return;
+            }
 
-    } catch (error) {
-        return { statusCode: 500, body: JSON.stringify({ message: error.message }) };
-    }
-};
+            btn.disabled = true;
+            grid.innerHTML = "";
+            status.className = "";
+            let allTracks = [];
+
+            try {
+                // Loop 10 times to fetch 100 tracks (10 per request per 2026 limits)
+                for (let i = 0; i < 10; i++) {
+                    status.innerText = `Fetching tracks ${i * 10 + 1} - ${(i + 1) * 10}...`;
+                    
+                    const response = await fetch('/.netlify/functions/spotify', {
+                        method: 'GET',
+                        headers: {
+                            'x-client-id': id,
+                            'x-client-secret': secret,
+                            'x-offset': i * 10
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || "Request failed");
+                    }
+
+                    const data = await response.json();
+                    
+                    // Claude's defensive property access check
+                    if (data?.tracks?.items) {
+                        allTracks = [...allTracks, ...data.tracks.items];
+                        render(allTracks);
+                    }
+                }
+                status.innerText = `Successfully loaded ${allTracks.length} tracks.`;
+            } catch (e) {
+                status.className = "error";
+                status.innerText = e.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function render(tracks) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = tracks.map(t => `
+                <div class="card">
+                    <img src="${t.album?.images?.[0]?.url || 'https://via.placeholder.com/180'}" alt="album art">
+                    <div style="margin-top:10px; font-weight:bold; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        ${t.name || 'Unknown Track'}
+                    </div>
+                    <div style="color:#888; font-size:0.75rem;">
+                        ${t.artists?.[0]?.name || 'Unknown Artist'}
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
