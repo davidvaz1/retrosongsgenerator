@@ -170,53 +170,69 @@
     </div>
 
     <script>
-        async function run() {
-            const id = document.getElementById('id').value.trim();
-            const secret = document.getElementById('secret').value.trim();
-            const status = document.getElementById('status');
-            const grid = document.getElementById('grid');
+const fetch = require('node-fetch');
 
-            if (!id || !secret) {
-                status.innerText = "Please enter both Client ID and Client Secret.";
-                return;
-            }
+exports.handler = async (event) => {
+    // 1. Handle Preflight/Method check
+    if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+    
+    try {
+        const body = JSON.parse(event.body);
+        // MATCHING THE FRONTEND: client_id and client_secret
+        const clientId = body.client_id;
+        const clientSecret = body.client_secret;
 
-            status.innerText = "Syncing with Spotify API...";
-            grid.innerHTML = "";
-
-            try {
-                // Pointing to your existing Netlify Function
-                const res = await fetch('/.netlify/functions/spotify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ client_id: id, client_secret: secret })
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    throw new Error(data.error || `Error ${res.status}`);
-                }
-
-                data.albums.forEach(album => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <img src="${album.images[0]?.url || ''}" loading="lazy">
-                        <div class="card-info">
-                            <strong>${album.name}</strong>
-                            <small>${album.artists[0]?.name || 'Unknown'}</small>
-                        </div>
-                        <a href="${album.external_urls?.spotify || '#'}" target="_blank" class="btn">VIEW ALBUM</a>
-                    `;
-                    grid.appendChild(card);
-                });
-
-                status.innerText = `Success: ${data.albums.length} New Releases Loaded.`;
-            } catch (e) {
-                status.innerText = "Connection Failed: " + e.message;
-            }
+        if (!clientId || !clientSecret) {
+            return { statusCode: 400, body: JSON.stringify({ error: "Missing credentials in request body" }) };
         }
+
+        // 2. AUTHENTICATION
+        const authRes = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'grant_type=client_credentials'
+        });
+
+        const authData = await authRes.json();
+        if (!authRes.ok) return { statusCode: 401, body: JSON.stringify({ error: "Spotify Auth Failed: " + (authData.error_description || authData.error) }) };
+        
+        const token = authData.access_token;
+
+        // 3. FETCH DATA (Using Search as the primary, most reliable 2026 source)
+        // We use q=tag:new to get the 50 latest global releases reliably
+        const spotifyRes = await fetch('https://api.spotify.com/v1/search?q=tag:new&type=album&limit=50&market=US', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!spotifyRes.ok) {
+            // Fallback strategy: If search fails, try New Releases
+            const fallbackRes = await fetch('https://api.spotify.com/v1/browse/new-releases?limit=50&country=US', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!fallbackRes.ok) throw new Error("Spotify rejected all fetch attempts.");
+            const fallbackData = await fallbackRes.json();
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ albums: fallbackData.albums.items })
+            };
+        }
+
+        const data = await spotifyRes.json();
+        return {
+            statusCode: 200,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ albums: data.albums.items })
+        };
+
+    } catch (err) {
+        return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    }
+};
     </script>
 </body>
 </html>
+
