@@ -2,63 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Global 100 - Final Stability Fix</title>
+    <title>Global 100 - Force Display</title>
     <style>
-        :root { --accent: #1DB954; --glass: rgba(255, 255, 255, 0.08); --border: rgba(255, 255, 255, 0.15); }
-        body { background: #05070a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; min-height: 100vh; }
+        :root { --accent: #1DB954; --glass: rgba(255, 255, 255, 0.1); }
+        body { background: #0b0e14; color: white; font-family: sans-serif; margin: 0; padding: 20px; }
         
-        /* Floating Background */
-        .orb { position: fixed; width: 600px; height: 600px; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.4; animation: drift 30s infinite alternate; }
-        @keyframes drift { from { transform: translate(-10%, -10%); } to { transform: translate(20%, 20%); } }
+        /* Floating background for Glassmorphism depth */
+        .bg-blur { position: fixed; width: 50vw; height: 50vw; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.3; background: linear-gradient(#1DB954, #7928ca); animation: move 20s infinite alternate; }
+        @keyframes move { from { transform: translate(-10%, -10%); } to { transform: translate(30%, 30%); } }
 
         .header {
-            max-width: 600px; margin: 20px auto; text-align: center;
-            background: var(--glass); backdrop-filter: blur(30px);
-            padding: 30px; border-radius: 24px; border: 1px solid var(--border);
-            position: sticky; top: 10px; z-index: 100;
+            max-width: 500px; margin: 0 auto 30px; text-align: center;
+            background: var(--glass); backdrop-filter: blur(20px);
+            padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .auth-grid { display: grid; gap: 10px; margin-bottom: 20px; }
-        input { padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.6); color: white; }
-        
+        .inputs { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        input { padding: 12px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; }
+
+        /* THE GRID - Forced Layout */
         #grid { 
             display: grid !important; 
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-            gap: 25px; max-width: 1400px; margin: 40px auto;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important; 
+            gap: 20px !important; 
+            width: 100% !important;
+            min-height: 500px;
         }
 
         .card { 
-            background: var(--glass); backdrop-filter: blur(20px);
-            border-radius: 20px; border: 1px solid var(--border);
-            overflow: hidden; display: flex; flex-direction: column; height: 100%;
+            background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
+            border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; display: flex; flex-direction: column;
         }
-        .card img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #111; }
-        .card-content { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
-        .title { font-weight: 800; font-size: 1.1rem; margin-bottom: 5px; height: 2.8em; overflow: hidden; }
-        .artist { color: var(--accent); font-weight: 700; margin-bottom: 15px; }
-        .stats { font-size: 0.8rem; color: #aaa; margin-bottom: 20px; flex-grow: 1; }
-        .stats div { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 4px 0; }
+        .card img { width: 100%; aspect-ratio: 1; border-radius: 10px; object-fit: cover; background: #222; }
+        .info { margin-top: 15px; flex-grow: 1; }
+        .t { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; display: block; }
+        .a { color: var(--accent); font-size: 0.9rem; display: block; margin-bottom: 10px; }
+        .meta { font-size: 0.75rem; color: #aaa; line-height: 1.6; }
         
-        .play-link { 
-            background: var(--accent); color: white; text-decoration: none; text-align: center; 
-            padding: 12px; border-radius: 10px; font-weight: 800; font-size: 0.9rem;
+        .link { 
+            display: block; background: var(--accent); color: white; text-align: center; 
+            padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 15px;
         }
-
-        #status { color: var(--accent); font-weight: 900; font-size: 1.2rem; margin-top: 10px; }
+        #status { color: var(--accent); font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="orb" style="background: #1DB954; top: -100px; left: -100px;"></div>
-    <div class="orb" style="background: #7928ca; bottom: -100px; right: -100px; animation-delay: -10s;"></div>
+    <div class="bg-blur"></div>
 
     <div class="header">
-        <h1>Global 100 Explorer</h1>
-        <div class="auth-grid">
-            <input type="text" id="clientId" placeholder="Client ID">
-            <input type="password" id="clientSecret" placeholder="Client Secret">
+        <h2>Global 100</h2>
+        <div class="inputs">
+            <input type="text" id="id" placeholder="Client ID">
+            <input type="password" id="secret" placeholder="Client Secret">
         </div>
-        <button onclick="run()" style="background:var(--accent); color:white; border:none; padding:15px 40px; border-radius:30px; cursor:pointer; font-weight:900; width:100%">GENERATE 100 SONGS</button>
+        <button onclick="run()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:30px; cursor:pointer; font-weight:bold;">GENERATE 100 SONGS</button>
         <div id="status">Ready</div>
     </div>
 
@@ -66,77 +65,70 @@
 
     <script>
         async function run() {
-            const id = document.getElementById('clientId').value.trim();
-            const secret = document.getElementById('clientSecret').value.trim();
+            const id = document.getElementById('id').value.trim();
+            const secret = document.getElementById('secret').value.trim();
             const status = document.getElementById('status');
             const grid = document.getElementById('grid');
             
-            if(!id || !secret) return alert("Keys required!");
+            if(!id || !secret) return alert("Keys missing!");
             
-            grid.innerHTML = ""; 
-            status.innerText = "Connecting...";
-
+            grid.innerHTML = "Attempting to draw cards..."; 
+            
             try {
-                // 1. Get Token
+                // 1. Auth
                 const auth = await fetch('https://accounts.spotify.com/api/token', {
                     method: 'POST',
                     headers: { 'Authorization': 'Basic ' + btoa(id + ':' + secret), 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'grant_type=client_credentials'
                 });
-                const authData = await auth.json();
-                const access_token = authData.access_token;
+                const { access_token } = await auth.json();
 
-                // 2. Random Seed for variety
-                const seed = "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random()*26)];
-                
+                // 2. Fetch with a broader search to ensure data exists
+                // market=US filter is still active to avoid regional/Hindi clutter
                 for (let i = 0; i < 5; i++) {
-                    status.innerText = `Fetching: ${ (i+1)*20 } / 100`;
+                    status.innerText = `Syncing: ${ (i+1)*20 }/100`;
                     
-                    // Fixed Market=US to avoid Hindi tracks
-                    const res = await fetch(`https://api.spotify.com/v1/search?q=${seed}*&type=track&limit=20&offset=${i*20}&market=US`, {
+                    const res = await fetch(`https://api.spotify.com/v1/search?q=top%20hits&type=track&limit=20&offset=${i*20}&market=US`, {
                         headers: { 'Authorization': 'Bearer ' + access_token }
                     });
-                    
                     const data = await res.json();
-                    
-                    if(data && data.tracks && data.tracks.items) {
+
+                    if(data.tracks && data.tracks.items) {
+                        if(i === 0) grid.innerHTML = ""; // Clear the "Attempting" text on first batch
+                        
                         data.tracks.items.forEach(track => {
-                            // DEFENSIVE CHECK: Skip if critical data is missing
-                            if (!track || !track.album) return;
+                            // DEFENSIVE DATA EXTRACTION
+                            const img = track.album?.images?.[0]?.url || '';
+                            const name = track.name || 'Unknown';
+                            const artist = track.artists?.[0]?.name || 'Unknown';
+                            const album = track.album?.name || 'N/A';
+                            const date = track.album?.release_date || 'N/A';
+                            const pop = track.popularity || 0;
+                            const url = track.external_urls?.spotify || '#';
 
-                            const card = document.createElement('div');
-                            card.className = 'card';
-                            
-                            // Safe data extraction
-                            const imgUrl = track.album.images && track.album.images[0] ? track.album.images[0].url : '';
-                            const trackName = track.name || 'Unknown Title';
-                            const artistName = track.artists && track.artists[0] ? track.artists[0].name : 'Unknown Artist';
-                            const albumName = track.album.name || 'Unknown Album';
-                            const releaseDate = track.album.release_date || 'N/A';
-                            const popularity = track.popularity || '0';
-                            const spotifyUrl = track.external_urls ? track.external_urls.spotify : '#';
-
-                            card.innerHTML = `
-                                <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/300?text=No+Cover'">
-                                <div class="card-content">
-                                    <div class="title">${trackName}</div>
-                                    <div class="artist">${artistName}</div>
-                                    <div class="stats">
-                                        <div><span>Album</span><span>${albumName.slice(0,12)}..</span></div>
-                                        <div><span>Release</span><span>${releaseDate.split('-')[0]}</span></div>
-                                        <div><span>Popularity</span><span>${popularity}%</span></div>
+                            // CREATE ELEMENT
+                            const div = document.createElement('div');
+                            div.className = 'card';
+                            div.innerHTML = `
+                                <img src="${img}">
+                                <div class="info">
+                                    <span class="t">${name}</span>
+                                    <span class="a">${artist}</span>
+                                    <div class="meta">
+                                        Album: ${album.slice(0,20)}...<br>
+                                        Released: ${date}<br>
+                                        Popularity: ${pop}%
                                     </div>
-                                    <a href="${spotifyUrl}" target="_blank" class="play-link">SPOTIFY LINK</a>
+                                    <a href="${url}" target="_blank" class="link">LISTEN</a>
                                 </div>
                             `;
-                            grid.appendChild(card);
+                            grid.appendChild(div);
                         });
                     }
                 }
-                status.innerText = "✨ 100 Songs Displayed";
+                status.innerText = "Display Complete.";
             } catch (e) {
-                status.innerText = "System Error: " + e.message;
-                console.error("Debug Error:", e);
+                status.innerText = "Error: " + e.message;
             }
         }
     </script>
