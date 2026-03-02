@@ -5,13 +5,12 @@ module.exports = (req, res) => {
     const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
     
     if (!client_id || !client_secret) {
-        // NO AUTH → Charts backup
-        return spotifyChartsFallback(res);
+        return res.json({ albums: [] });
     }
     
-    // 1. TRY AUTHENTICATED (Spotify Playlists)
     const auth = Buffer.from(client_id + ':' + client_secret).toString('base64');
     
+    // Get token
     fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
@@ -24,47 +23,55 @@ module.exports = (req, res) => {
     .then(tokenData => {
         const token = tokenData.access_token;
         
-        // Try Today's Top Hits
-        fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbKDoHU1qeps8/tracks?limit=12', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        })
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(data => processSpotifyTracks(data))
-        .then(albums => {
-            if (albums.length > 0) return res.json({ albums });
-            throw new Error('Empty playlist');
-        })
-        .catch(() => {
-            // Playlist failed → Charts backup
-            spotifyChartsFallback(res);
-        });
-    })
-    .catch(() => spotifyChartsFallback(res));
-};
-
-// Process Spotify tracks → albums format
-function processSpotifyTracks(data) {
-    if (!data.items || data.items.length === 0) return [];
-    return data.items.slice(0, 12).map(item => ({
-        name: item.track.name,
-        artists: item.track.artists,
-        images: item.track.album.images,
-        external_urls: item.track.external_urls
-    }));
-}
-
-// Charts API Failsafe (NO AUTH needed)
-function spotifyChartsFallback(res) {
-    fetch('https://spotify-charts.com/api/tracks?country=global&limit=12')
-    .then(r => r.json())
-    .then(data => {
-        const albums = data.data.slice(0, 12).map(item => ({
-            name: item.title.split(' - ')[0],
-            artists: [{ name: item.artist }],
-            images: [{ url: item.image }],
-            external_urls: { spotify: 'https://open.spotify.com/track/' + item.spotify_id }
-        }));
-        res.json({ albums });
+        // TRY 3 BULLETPROOF ENDPOINTS (in order)
+        const endpoints = [
+            'https://api.spotify.com/v1/playlists/37i9dQZEVXbKDoHU1qeps8/tracks?limit=12',  // Today's Top Hits
+            'https://api.spotify.com/v1/playlists/37i9dQZEVXbMDoHDwVN2tF/tracks?limit=12',  // Global Top 50  
+            'https://api.spotify.com/v1/browse/new-releases?limit=12'  // New Releases
+        ];
+        
+        tryEndpoint(0, token, endpoints);
+        
+        function tryEndpoint(index, token, endpoints) {
+            if (index >= endpoints.length) {
+                return res.json({ albums: [] });
+            }
+            
+            fetch(endpoints[index], {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(r => {
+                if (!r.ok) throw new Error(r.status);
+                return r.json();
+            })
+            .then(data => {
+                let albums = [];
+                
+                // Handle different response formats
+                if (endpoints[index].includes('new-releases')) {
+                    albums = data.albums.items.slice(0, 12).map(item => ({
+                        name: item.name,
+                        artists: item.artists,
+                        images: item.images,
+                        external_urls: item.external_urls
+                    }));
+                } else {
+                    albums = data.items.slice(0, 12).map(item => ({
+                        name: item.track?.name || item.album?.name || 'Unknown',
+                        artists: item.track?.artists || item.album?.artists || [],
+                        images: item.track?.album?.images || item.album?.images || [],
+                        external_urls: item.track?.external_urls || item.album?.external_urls || {}
+                    }));
+                }
+                
+                if (albums.length > 0) {
+                    res.json({ albums });
+                } else {
+                    tryEndpoint(index + 1, token, endpoints);
+                }
+            })
+            .catch(() => tryEndpoint(index + 1, token, endpoints));
+        }
     })
     .catch(() => res.json({ albums: [] }));
-}
+};
