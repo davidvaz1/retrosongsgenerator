@@ -11,153 +11,27 @@
             --glass-border: rgba(255, 255, 255, 0.12);
             --bg-color: #0b0e14;
         }
-
-        body {
-            background: var(--bg-color);
-            color: white;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .orb {
-            position: fixed;
-            width: 500px;
-            height: 500px;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            opacity: 0.4;
-            animation: float 20s infinite alternate ease-in-out;
-        }
-        .orb-1 { background: #1DB954; top: -10%; left: -10%; }
-        .orb-2 { background: #7928ca; bottom: -10%; right: -10%; animation-delay: -5s; }
-
-        @keyframes float {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(100px, 50px); }
-        }
-
-        .header {
-            max-width: 550px;
-            margin: 60px auto;
-            text-align: center;
-            background: var(--glass);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            padding: 40px;
-            border-radius: 32px;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        h1 { font-size: 2.5rem; letter-spacing: -1.5px; margin-bottom: 25px; }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        input {
-            padding: 14px 18px;
-            border-radius: 14px;
-            border: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-        input:focus {
-            border-color: var(--accent);
-            outline: none;
-            background: rgba(0, 0, 0, 0.5);
-            box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
-        }
-        input::placeholder { color: rgba(255,255,255,0.6); }
-
-        button {
-            width: 100%;
-            padding: 16px;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: 800;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: transform 0.2s, background 0.3s;
-        }
-        button:hover { transform: scale(1.02); background: #1ed760; }
-        button:active { transform: scale(0.98); }
-
-        #status {
-            margin-top: 20px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--accent);
-            letter-spacing: 0.5px;
-        }
-
-        #grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 30px;
-            margin: 50px auto 0;
-            max-width: 1400px;
-            padding: 0 20px;
-        }
-
-        .card {
-            background: var(--glass);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: 24px;
-            padding: 20px;
-            border: 1px solid var(--glass-border);
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            flex-direction: column;
-        }
-        .card:hover {
-            transform: translateY(-12px);
-            border-color: rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .card img {
-            width: 100%;
-            height: 300px;
-            object-fit: cover;
-            border-radius: 16px;
-            margin-bottom: 18px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-
-        .card-info { flex-grow: 1; }
-        .card strong { font-size: 1.1rem; display: block; margin-bottom: 4px; line-height: 1.3; }
-        .card small { font-size: 0.9rem; color: #b3b3b3; font-weight: 500; }
-
-        .btn {
-            display: block;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            text-align: center;
-            padding: 12px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 700;
-            margin-top: 20px;
-            font-size: 0.85rem;
-            border: 1px solid var(--glass-border);
-            transition: 0.3s;
-        }
-        .btn:hover { background: white; color: black; }
+        /* [KEEP ALL YOUR EXISTING CSS - just replace HTML/JS] */
+        body {background: var(--bg-color);color: white;font-family: 'Inter', system-ui, -apple-system, sans-serif;margin: 0;padding: 20px;min-height: 100vh;overflow-x: hidden}
+        .orb {position: fixed;width: 500px;height: 500px;border-radius: 50%;filter: blur(80px);z-index: -1;opacity: .4;animation: float 20s infinite alternate ease-in-out}
+        .orb-1 {background: #1DB954;top: -10%;left: -10%}
+        .orb-2 {background: #7928ca;bottom: -10%;right: -10%;animation-delay: -5s}
+        @keyframes float {0% {transform: translate(0, 0)}100% {transform: translate(100px, 50px)}}
+        .header {max-width: 550px;margin: 60px auto;text-align: center;background: var(--glass);backdrop-filter: blur(25px);-webkit-backdrop-filter: blur(25px);padding: 40px;border-radius: 32px;border: 1px solid var(--glass-border);box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5)}
+        h1 {font-size: 2.5rem;letter-spacing: -1.5px;margin-bottom: 25px}
+        button {width: 100%;padding: 16px;background: var(--accent);color: #000;border: none;border-radius: 50px;cursor: pointer;font-weight: 800;font-size: 1rem;text-transform: uppercase;letter-spacing: 1px;transition: transform 0.2s, background 0.3s}
+        button:hover {transform: scale(1.02);background: #1ed760}
+        button:active {transform: scale(0.98)}
+        #status {margin-top: 20px;font-weight: 700;font-size: .9rem;color: var(--accent);letter-spacing: .5px}
+        #grid {display: grid;grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));gap: 30px;margin: 50px auto 0;max-width: 1400px;padding: 0 20px}
+        .card {background: var(--glass);backdrop-filter: blur(15px);-webkit-backdrop-filter: blur(15px);border-radius: 24px;padding: 20px;border: 1px solid var(--glass-border);transition: .4s cubic-bezier(.175, .885, .32, 1.275);display: flex;flex-direction: column}
+        .card:hover {transform: translateY(-12px);border-color: rgba(255, 255, 255, 0.3);background: rgba(255, 255, 255, 0.1)}
+        .card img {width: 100%;height: 300px;object-fit: cover;border-radius: 16px;margin-bottom: 18px;box-shadow: 0 10px 20px rgba(0,0,0,0.3)}
+        .card-info {flex-grow: 1}
+        .card strong {font-size: 1.1rem;display: block;margin-bottom: 4px;line-height: 1.3}
+        .card small {font-size: .9rem;color: #b3b3b3;font-weight: 500}
+        .btn {display: block;background: rgba(255, 255, 255, 0.1);color: white;text-align: center;padding: 12px;border-radius: 12px;text-decoration: none;font-weight: 700;margin-top: 20px;font-size: .85rem;border: 1px solid var(--glass-border);transition: .3s}
+        .btn:hover {background: white;color: black}
     </style>
 </head>
 <body>
@@ -166,46 +40,25 @@
 
     <div class="header">
         <h1>Global 100</h1>
-        <div class="input-group">
-            <input type="text" id="id" placeholder="Spotify Client ID">
-            <input type="password" id="secret" placeholder="Spotify Client Secret">
-        </div>
-        <button onclick="run()">🎵 Fetch Live Spotify Releases</button>
-        <p id="status">Enter credentials → Click to fetch REAL Spotify data</p>
+        <button onclick="fetchSpotify()">🎵 Fetch Latest Releases</button>
+        <p id="status">Loading live Spotify data...</p>
     </div>
 
     <div id="grid"></div>
 
     <script>
-    async function run() {
-        const id = document.getElementById('id')?.value?.trim();
-        const secret = document.getElementById('secret')?.value?.trim();
+    async function fetchSpotify() {
         const status = document.getElementById('status');
         const grid = document.getElementById('grid');
-
-        if (!id || !secret) {
-            status.textContent = 'Please enter Spotify Client ID and Secret';
-            return;
-        }
-
-        status.textContent = '🎵 Connecting to Spotify...';
+        
+        status.textContent = '🔄 Fetching from Spotify...';
         grid.innerHTML = '';
 
         try {
-            const response = await fetch('/api/spotify', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ client_id: id, client_secret: secret })
-            });
-
+            const response = await fetch('/api/spotify');
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP ${response.status}`);
-            }
+            if (!response.ok) throw new Error(data.error || 'API failed');
 
             if (!data.albums?.length) {
                 status.textContent = 'No new releases found';
@@ -217,7 +70,7 @@
                 card.className = 'card';
                 
                 const imgUrl = album.images?.[0]?.url || '';
-                const artistName = album.artists?.[0]?.name || 'Unknown Artist';
+                const artistName = album.artists?.[0]?.name || 'Unknown';
                 const albumUrl = album.external_urls?.spotify || '#';
                 
                 card.innerHTML = `
@@ -226,22 +79,21 @@
                         <strong>${album.name}</strong>
                         <small>${artistName}</small>
                     </div>
-                    <a href="${albumUrl}" target="_blank" rel="noopener noreferrer" class="btn">🎧 PLAY ON SPOTIFY</a>
+                    <a href="${albumUrl}" target="_blank" class="btn">🎧 SPOTIFY</a>
                 `;
                 grid.appendChild(card);
             });
 
-            status.innerHTML = `✅ <strong>${data.albums.length}</strong> New Releases Loaded!`;
+            status.innerHTML = `✅ <strong>${data.albums.length}</strong> New Releases!`;
         } catch (error) {
             status.textContent = `❌ ${error.message}`;
-            console.error('Error:', error);
+            console.error(error);
         }
     }
 
-    // Enter key support
-    document.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') run();
-    });
+    // Auto-load on page load + refresh every 5 minutes
+    window.addEventListener('load', fetchSpotify);
+    setInterval(fetchSpotify, 300000);
     </script>
 </body>
 </html>
