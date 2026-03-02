@@ -1,6 +1,8 @@
 {
-  "name": "spotify-global100",
-  "version": "1.0.0",
-  "type": "commonjs",
-  "dependencies": {}
+  "functions": {
+    "api/spotify.js": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 15
+    }
+  }
 }
