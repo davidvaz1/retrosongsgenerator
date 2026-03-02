@@ -4,10 +4,10 @@ module.exports = (req, res) => {
     const client_id = process.env.SPOTIFY_CLIENT_ID;
     const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
     
-    // TRY 1: Authenticated Global Top 50 (BEST data)
     if (client_id && client_secret) {
         const auth = Buffer.from(`${client_id}:${client_secret}`).toString('base64');
         
+        // 1. Get token
         fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
             headers: {
@@ -16,12 +16,22 @@ module.exports = (req, res) => {
             },
             body: 'grant_type=client_credentials'
         })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error(`Token failed: ${r.status}`);
+            return r.json();
+        })
         .then(token => {
-            fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbMDoHDwVN2tF/tracks?limit=12', {
-                headers: { 'Authorization': `Bearer ${token.access_token}` }
+            // 2. Get TODAY'S TOP HITS (35M followers)
+            fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbKDoHU1qeps8/tracks?limit=12', {
+                headers: { 
+                    'Authorization': `Bearer ${token.access_token}`,
+                    'Accept': 'application/json'
+                }
             })
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error(`Playlist failed: ${r.status}`);
+                return r.json();
+            })
             .then(data => {
                 const albums = data.items.map(item => ({
                     name: item.track.name,
@@ -31,31 +41,10 @@ module.exports = (req, res) => {
                 }));
                 res.json({ albums });
             })
-            .catch(() => viral50Fallback(res));
+            .catch(() => res.json({ albums: [] }));
         })
-        .catch(() => viral50Fallback(res));
+        .catch(() => res.json({ albums: [] }));
     } else {
-        // TRY 2: Viral 50 Failsafe (Public)
-        viral50Fallback(res);
+        res.json({ albums: [] });
     }
 };
-
-function viral50Fallback(res) {
-    fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbKIHJIU0bdQs/tracks?limit=12', {
-        headers: { 
-            'Accept': 'application/json',
-            'User-Agent': 'Global100/1.0'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        const albums = data.items.map(item => ({
-            name: item.track.name,
-            artists: item.track.artists,
-            images: item.track.album.images,
-            external_urls: item.track.external_urls
-        }));
-        res.json({ albums });
-    })
-    .catch(() => res.json({ albums: [] }));
-}
