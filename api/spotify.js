@@ -4,10 +4,6 @@ module.exports = (req, res) => {
     const client_id = process.env.SPOTIFY_CLIENT_ID;
     const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
     
-    if (!client_id || !client_secret) {
-        return res.json({ albums: [] });
-    }
-    
     const auth = Buffer.from(client_id + ':' + client_secret).toString('base64');
     
     fetch('https://accounts.spotify.com/api/token', {
@@ -22,45 +18,24 @@ module.exports = (req, res) => {
     .then(tokenData => {
         const token = tokenData.access_token;
         
-        // CLIENT CREDENTIALS SAFE ENDPOINTS ONLY
-        fetch('https://api.spotify.com/v1/browse/featured-playlists?limit=1', {
+        // NEW RELEASES = 100% CLIENT CREDENTIALS SAFE
+        fetch('https://api.spotify.com/v1/browse/new-releases?limit=12&country=US', {
             headers: { 'Authorization': 'Bearer ' + token }
         })
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(data => {
-            // Get first featured playlist → get its tracks
-            const playlistId = data.playlists.items[0].id;
-            return fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=12`, {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
         })
-        .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => {
-            const albums = data.items.map(item => ({
-                name: item.track.name,
-                artists: item.track.artists,
-                images: item.track.album.images,
-                external_urls: item.track.external_urls
+            const albums = data.albums.items.map(item => ({
+                name: item.name,
+                artists: item.artists,
+                images: item.images,
+                external_urls: item.external_urls
             }));
             res.json({ albums });
         })
-        .catch(() => {
-            // FINAL FALLBACK: New Releases (100% works)
-            fetch('https://api.spotify.com/v1/browse/new-releases?limit=12', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            })
-            .then(r => r.json())
-            .then(data => {
-                const albums = data.albums.items.map(item => ({
-                    name: item.name,
-                    artists: item.artists,
-                    images: item.images,
-                    external_urls: item.external_urls
-                }));
-                res.json({ albums });
-            })
-            .catch(() => res.json({ albums: [] }));
-        });
+        .catch(e => res.json({ albums: [] }));
     })
     .catch(() => res.json({ albums: [] }));
 };
