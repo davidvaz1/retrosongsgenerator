@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/spotify.js": {
-      "maxDuration": 15
+      "maxDuration": 30
     }
   }
 }
