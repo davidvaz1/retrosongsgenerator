@@ -151,64 +151,73 @@
     <div id="grid"></div>
 
     <script>
-        // PURE MATH - No arrays, no static data
-        function generateLiveChart() {
-            const status = document.getElementById('status');
-            const grid = document.getElementById('grid');
-            
-            status.textContent = '🧮 Computing live Global 100...';
-            grid.innerHTML = '';
+async function run() {
+    const id = document.getElementById('id')?.value?.trim();
+    const secret = document.getElementById('secret')?.value?.trim();
+    const status = document.getElementById('status');
+    const grid = document.getElementById('grid');
 
-            setTimeout(() => {
-                for(let i = 0; i < 12; i++) {
-                    // MATH-GENERATED song names
-                    const timeSeed = Date.now() * 0.001 + i;
-                    const nameSeed = Math.sin(timeSeed) * 10000;
-                    const artistSeed = Math.cos(timeSeed * 1.3) * 10000;
-                    
-                    // Dynamic song title from math
-                    const nameHash = Math.floor(nameSeed) % 1000;
-                    const songWords = ['Dream', 'Night', 'Heart', 'Star', 'Wave', 'Flame', 'Ghost', 'River', 'Echo', 'Spark'];
-                    const wordIndex = Math.floor(Math.abs(Math.sin(nameSeed * 0.1)) * songWords.length);
-                    const songName = `${songWords[wordIndex % songWords.length]} ${Math.floor(Math.abs(Math.cos(nameSeed * 0.2)) * 99)}`;
-                    
-                    // Dynamic artist from math
-                    const artistHash = Math.floor(artistSeed) % 100;
-                    const artistName = `Artist ${(artistHash + i * 7) % 50}`;
-                    
-                    // Dynamic position
-                    const position = i + 1;
-                    
-                    // Dynamic gradient from math
-                    const hue1 = (timeSeed * 50 + i * 30) % 360;
-                    const hue2 = (hue1 + 60 + i * 20) % 360;
-                    const gradient = `linear-gradient(135deg, hsl(${hue1}, 70%, 50%), hsl(${hue2}, 70%, 40%))`;
-                    
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    
-                    card.innerHTML = `
-                        <div class="cover-placeholder" style="background: ${gradient}">
-                            #${position}
-                        </div>
-                        <div class="card-info">
-                            <strong>${songName}</strong>
-                            <small>${artistName}</small>
-                        </div>
-                        <a href="#" class="btn">PLAY NOW</a>
-                    `;
-                    grid.appendChild(card);
-                }
-                
-                status.innerHTML = `✅ <strong>12</strong> Live Generated Tracks`;
-            }, 1000);
+    if (!id || !secret) {
+        status.textContent = 'Please enter Spotify Client ID and Secret';
+        return;
+    }
+
+    status.textContent = '🎵 Connecting to Spotify...';
+    grid.innerHTML = '';
+
+    try {
+        const response = await fetch('/api/spotify', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ client_id: id, client_secret: secret })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || `HTTP ${response.status}`);
         }
 
-        // REGENERATE every 15 seconds - TRULY LIVE
-        setInterval(generateLiveChart, 15000);
-        
-        // Start immediately
-        window.addEventListener('load', generateLiveChart);
-    </script>
+        if (!data.albums?.length) {
+            status.textContent = 'No new releases found';
+            return;
+        }
+
+        data.albums.slice(0, 12).forEach(album => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const imgUrl = album.images?.[0]?.url || '';
+            const artistName = album.artists?.[0]?.name || 'Unknown Artist';
+            const albumUrl = album.external_urls.spotify || '#';
+            
+            card.innerHTML = `
+                <img src="${imgUrl}" alt="${album.name}" loading="lazy">
+                <div class="card-info">
+                    <strong>${album.name}</strong>
+                    <small>${artistName}</small>
+                </div>
+                <a href="${albumUrl}" target="_blank" rel="noopener noreferrer" class="btn">🎧 PLAY ON SPOTIFY</a>
+            `;
+            grid.appendChild(card);
+        });
+
+        status.innerHTML = `✅ <strong>${data.albums.length}</strong> New Releases Loaded!`;
+    } catch (error) {
+        status.textContent = `❌ ${error.message}`;
+        console.error('Frontend error:', error);
+    }
+}
+
+// Enter key support
+document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') run();
+});
+</script>
+
 </body>
 </html>
+
