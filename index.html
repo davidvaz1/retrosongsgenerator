@@ -46,54 +46,57 @@
 
     <div id="grid"></div>
 
-    <script>
-    async function fetchSpotify() {
-        const status = document.getElementById('status');
-        const grid = document.getElementById('grid');
+<script>
+async function fetchSpotify() {
+    const status = document.getElementById('status');
+    const grid = document.getElementById('grid');
+    
+    status.textContent = '🔄 Loading Spotify releases...';
+    grid.innerHTML = '';
+
+    try {
+        const response = await fetch('/api/spotify');
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
         
-        status.textContent = '🔄 Fetching from Spotify...';
-        grid.innerHTML = '';
-
-        try {
-            const response = await fetch('/api/spotify');
-            const data = await response.json();
-
-            if (!response.ok) throw new Error(data.error || 'API failed');
-
-            if (!data.albums?.length) {
-                status.textContent = 'No new releases found';
-                return;
-            }
-
-            data.albums.slice(0, 12).forEach(album => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                
-                const imgUrl = album.images?.[0]?.url || '';
-                const artistName = album.artists?.[0]?.name || 'Unknown';
-                const albumUrl = album.external_urls?.spotify || '#';
-                
-                card.innerHTML = `
-                    <img src="${imgUrl}" alt="${album.name}" loading="lazy">
-                    <div class="card-info">
-                        <strong>${album.name}</strong>
-                        <small>${artistName}</small>
-                    </div>
-                    <a href="${albumUrl}" target="_blank" class="btn">🎧 SPOTIFY</a>
-                `;
-                grid.appendChild(card);
-            });
-
-            status.innerHTML = `✅ <strong>${data.albums.length}</strong> New Releases!`;
-        } catch (error) {
-            status.textContent = `❌ ${error.message}`;
-            console.error(error);
+        const data = await response.json();
+        
+        if (!data.albums || data.albums.length === 0) {
+            throw new Error('No albums received from Spotify');
         }
-    }
 
-    // Auto-load on page load + refresh every 5 minutes
-    window.addEventListener('load', fetchSpotify);
-    setInterval(fetchSpotify, 300000);
-    </script>
+        data.albums.forEach((album, i) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const imgUrl = album.images?.[0]?.url || '';
+            const artistName = album.artists?.[0]?.name || 'Unknown Artist';
+            const albumUrl = album.external_urls?.spotify || '#';
+            
+            card.innerHTML = `
+                <img src="${imgUrl}" alt="${album.name}" loading="lazy" 
+                     style="width:100%;height:300px;object-fit:cover;border-radius:16px;margin-bottom:18px;box-shadow:0 10px 20px rgba(0,0,0,0.3);"
+                     onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('afterbegin','<div style=\\"display:flex;align-items:center;justify-content:center;height:300px;background:linear-gradient(135deg,#1DB954,#7928ca);border-radius:16px;font-size:4rem\\">🎵</div>')">
+                <div class="card-info">
+                    <strong>${album.name}</strong>
+                    <small>${artistName}</small>
+                </div>
+                <a href="${albumUrl}" target="_blank" class="btn">🎧 SPOTIFY</a>
+            `;
+            grid.appendChild(card);
+        });
+
+        status.innerHTML = `✅ <strong>${data.albums.length}</strong> New Releases Live!`;
+    } catch (error) {
+        status.textContent = `❌ ${error.message}`;
+        console.error('Load error:', error);
+    }
+}
+
+// Load immediately + auto-refresh every 10 minutes
+fetchSpotify();
+setInterval(fetchSpotify, 600000);
+</script>
+
 </body>
 </html>
+
