@@ -1,17 +1,13 @@
 module.exports = (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     
-    const client_id = process.env.SPOTIFY_CLIENT_ID;
-    const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+    const spotify_id = process.env.SPOTIFY_CLIENT_ID;
+    const spotify_secret = process.env.SPOTIFY_CLIENT_SECRET;
+    const youtube_key = process.env.YOUTUBE_API_KEY;
     
-    if (client_id && client_secret) {
-        trySpotify();
-    } else {
-        tryYouTube();
-    }
-    
-    function trySpotify() {
-        const auth = Buffer.from(client_id + ':' + client_secret).toString('base64');
+    // TIER 1: Spotify Search (client_credentials SAFE endpoint)
+    if (spotify_id && spotify_secret) {
+        const auth = Buffer.from(spotify_id + ':' + spotify_secret).toString('base64');
         
         fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
@@ -22,44 +18,46 @@ module.exports = (req, res) => {
             body: 'grant_type=client_credentials'
         })
         .then(r => r.json())
+        .then(({access_token: token}) => 
+            // SEARCH endpoint = Client Credentials SAFE
+            fetch(`https://api.spotify.com/v1/search?q=year:2025&type=track&limit=12`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+        )
+        .then(r => r.json())
         .then(data => {
-            const token = data.access_token;
-            fetch('https://api.spotify.com/v1/browse/new-releases?limit=12', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            })
-            .then(r => r.json())
-            .then(data => {
-                const albums = data.albums.items.slice(0,12).map(album => ({
-                    name: album.name,
-                    artists: album.artists,
-                    images: album.images,
-                    external_urls: album.external_urls
-                }));
-                sendCleanResponse(albums);
-            })
-            .catch(() => tryYouTube());
+            const albums = data.tracks.items.map(track => ({
+                name: track.name,
+                artists: track.artists,
+                images: track.album.images,
+                external_urls: track.external_urls,
+                album: track.album.name
+            }));
+            res.json({ albums });
         })
         .catch(() => tryYouTube());
+    } else {
+        tryYouTube();
     }
     
     function tryYouTube() {
-        fetch('https://youtube.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=trending+music&type=video&videoCategoryId=10')
+        if (!youtube_key) {
+            return res.json({ albums: [] });
+        }
+        
+        // YouTube Data API v3 - Trending Music (Authenticated)
+        fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=music+trending&type=video&videoCategoryId=10&order=viewCount&key=${youtube_key}`)
         .then(r => r.json())
         .then(data => {
-            const albums = data.items
-                .map(item => ({
-                    name: item.snippet.title.split(' - ')[0] || item.snippet.title,
-                    artists: [{ name: item.snippet.channelTitle }],
-                    images: [{ url: item.snippet.thumbnails.medium?.url || '' }],
-                    external_urls: { youtube: `https://youtube.com/watch?v=${item.id.videoId}` }
-                }))
-                .filter(item => item.images[0] && item.images[0].url);
-            sendCleanResponse(albums.slice(0,12));
+            const albums = data.items.map(item => ({
+                name: item.snippet.title.split(' - ')[0] || item.snippet.title,
+                artists: [{ name: item.snippet.channelTitle }],
+                images: [{ url: item.snippet.thumbnails.medium.url }],
+                external_urls: { youtube: `https://youtube.com/watch?v=${item.id.videoId}` },
+                album: 'Single'
+            }));
+            res.json({ albums });
         })
-        .catch(() => sendCleanResponse([]));
-    }
-    
-    function sendCleanResponse(albums) {
-        res.json({ albums });
+        .catch(() => res.json({ albums: [] }));
     }
 };
