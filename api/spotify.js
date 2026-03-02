@@ -31,12 +31,7 @@ module.exports = (req, res) => {
             .then(data => {
                 const albums = data.albums.items.slice(0,12).map(album => ({
                     name: album.name,
-                    artists: album.artists.map(a => a.name),
-                    album: album.name,
-                    genre: album.genres?.[0] || 'Pop',
-                    duration: formatDuration(album.duration_ms || 180000),
-                    duration_ms: album.duration_ms || 180000,
-                    release_year: new Date(album.release_date).getFullYear(),
+                    artists: album.artists,
                     images: album.images,
                     external_urls: album.external_urls
                 }));
@@ -54,25 +49,14 @@ module.exports = (req, res) => {
             const albums = data.items
                 .map(item => ({
                     name: item.snippet.title.split(' - ')[0] || item.snippet.title,
-                    artists: [item.snippet.channelTitle],
-                    album: 'Single',
-                    genre: 'Music',
-                    duration: '3:30',
-                    duration_ms: 210000,
-                    release_year: new Date().getFullYear(),
-                    images: [{ url: item.snippet.thumbnails.medium.url }],
+                    artists: [{ name: item.snippet.channelTitle }],
+                    images: [{ url: item.snippet.thumbnails.medium?.url || '' }],
                     external_urls: { youtube: `https://youtube.com/watch?v=${item.id.videoId}` }
                 }))
                 .filter(item => item.images[0] && item.images[0].url);
             sendCleanResponse(albums.slice(0,12));
         })
         .catch(() => sendCleanResponse([]));
-    }
-    
-    function formatDuration(ms) {
-        const minutes = Math.floor(ms / 60000);
-        const seconds = Math.floor((ms % 60000) / 1000);
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
     
     function sendCleanResponse(albums) {
